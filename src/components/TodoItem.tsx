@@ -1,18 +1,30 @@
-import { useState } from "react"
+import { useState, type ChangeEvent } from "react"
+import type { Todo } from "../types/todo"
 
-export default function TodoItem({ todo, onDelete, onToggle, onUpdate }: any) {
+type TodoItemProps = {
+  todo: Todo
+  onDelete: (id: number) => void
+  onToggle: (id: number) => void
+  onUpdate: (id: number, title: string) => void
+}
+
+export default function TodoItem({
+  todo,
+  onDelete,
+  onToggle,
+  onUpdate,
+}: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false)
-
-  const [editText, setEditText]: any = useState(
-    todo.title || todo.name || todo.text,
-  )
-
-  const isCompleted = todo.completed || todo.done || todo.isDone
-
-  const displayText = todo.title || todo.name || todo.text
+  const [editText, setEditText] = useState(todo.title)
 
   const handleSave = () => {
-    onUpdate(todo.id || todo._id || todo.identifier, editText)
+    const title = editText.trim()
+
+    if (!title) {
+      return
+    }
+
+    onUpdate(todo.id, title)
     setIsEditing(false)
   }
 
@@ -25,38 +37,42 @@ export default function TodoItem({ todo, onDelete, onToggle, onUpdate }: any) {
         padding: "8px 0",
         borderBottom: "1px solid #eee",
         listStyle: "none",
-        textDecoration: isCompleted ? "line-through" : "none",
-        opacity: isCompleted ? 0.5 : 1,
+        textDecoration: todo.completed ? "line-through" : "none",
+        opacity: todo.completed ? 0.5 : 1,
       }}
     >
       <input
         type="checkbox"
-        checked={!!isCompleted}
-        onChange={() => onToggle(todo.id || todo._id || todo.identifier)}
+        checked={todo.completed}
+        onChange={() => onToggle(todo.id)}
       />
 
       {isEditing ? (
         <>
           <input
             value={editText}
-            onChange={(e: any) => setEditText(e.target.value)}
+            onChange={(e: ChangeEvent<HTMLInputElement>) =>
+              setEditText(e.target.value)
+            }
             style={{ flex: 1, padding: "4px" }}
           />
           <button onClick={handleSave}>Save</button>
-          <button onClick={() => setIsEditing(false)}>Cancel</button>
+          <button
+            onClick={() => {
+              setEditText(todo.title)
+              setIsEditing(false)
+            }}
+          >
+            Cancel
+          </button>
         </>
       ) : (
         <>
-          <span style={{ flex: 1 }}>{displayText}</span>
+          <span style={{ flex: 1 }}>{todo.title}</span>
           <button onClick={() => setIsEditing(true)}>Edit</button>
-          <button
-            onClick={() => onDelete(todo.id || todo._id || todo.identifier)}
-          >
-            Delete
-          </button>
+          <button onClick={() => onDelete(todo.id)}>Delete</button>
         </>
       )}
     </li>
   )
 }
-

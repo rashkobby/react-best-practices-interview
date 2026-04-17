@@ -1,16 +1,22 @@
+import { normalizeTodos } from "./todo-utils"
+import type { Todo } from "./types/todo"
+
 const STORAGE_KEY = "todo-app-todos"
 
-export function loadFromStorage(): any {
+export function loadFromStorage(): Todo[] {
   const raw = localStorage.getItem(STORAGE_KEY)
-  const parsed = JSON.parse(raw as any)
-  return parsed
+
+  if (!raw) {
+    return []
+  }
+
+  try {
+    return normalizeTodos(JSON.parse(raw))
+  } catch {
+    return []
+  }
 }
 
-export function saveToStorage(data: any) {
+export function saveToStorage(data: Todo[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
 }
-
-export function deleteFromStorage(key: any) {
-  localStorage.removeItem(STORAGE_KEY)
-}
-

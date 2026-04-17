@@ -1,12 +1,22 @@
-import { useRef } from "react"
+import { useState, type ChangeEvent, type FormEvent } from "react"
 
-export default function AddTodo({ onAdd }: any) {
-  const inputRef: any = useRef()
+type AddTodoProps = {
+  onAdd: (title: string) => void
+}
 
-  const handleSubmit = (e: any) => {
+export default function AddTodo({ onAdd }: AddTodoProps) {
+  const [title, setTitle] = useState("")
+  const trimmedTitle = title.trim()
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    onAdd(inputRef.current.value)
-    inputRef.current.value = ""
+
+    if (!trimmedTitle) {
+      return
+    }
+
+    onAdd(trimmedTitle)
+    setTitle("")
   }
 
   return (
@@ -15,13 +25,15 @@ export default function AddTodo({ onAdd }: any) {
       style={{ display: "flex", gap: "8px", marginBottom: "16px" }}
     >
       <input
-        ref={inputRef}
         type="text"
         placeholder="What needs to be done?"
+        value={title}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
         style={{ flex: 1, padding: "8px" }}
       />
-      <button type="submit">Add</button>
+      <button type="submit" disabled={!trimmedTitle}>
+        Add
+      </button>
     </form>
   )
 }
-

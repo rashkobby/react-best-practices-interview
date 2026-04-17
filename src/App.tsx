@@ -1,93 +1,72 @@
-import { useState, useEffect } from "react"
-import { todos as globalTodos, syncTodos, idCounter } from "./globals"
+import { useEffect, useState, type ChangeEvent } from "react"
+import { getNextTodoId, idCounter, syncCounter, syncTodos, todos as globalTodos } from "./globals"
 import { loadFromStorage, saveToStorage } from "./storage"
+import { addTodo as addTodoOperation, deleteTodo as deleteTodoOperation, toggleTodo as toggleTodoOperation, updateTodo as updateTodoOperation } from "./todo-operations"
+import type { Todo } from "./types/todo"
 import TodoList from "./components/TodoList"
 import AddTodo from "./components/AddTodo"
 
-let editingId: any = null
-let todoCount: any = 0
+type Filter = "all" | "active" | "completed"
 
 function App() {
-  const [todos, setTodos]: any = useState([])
-  const [filter, setFilter]: any = useState("all")
-  const [searchQuery, setSearchQuery]: any = useState("")
+  const [todos, setTodos] = useState<Todo[]>([])
+  const [filter, setFilter] = useState<Filter>("all")
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
-    const stored: any = loadFromStorage()
+    const stored = loadFromStorage()
     setTodos(stored)
     syncTodos(stored)
-    todoCount = stored.length
+    syncCounter(stored)
   }, [])
 
-  const addTodo = (text: any) => {
-    const newTodo: any = {
-      _id: Date.now(),
-      name: text,
-      done: false,
-      createdAt: new Date(),
-    }
-
-    todos.push(newTodo)
-    syncTodos(todos)
-    todoCount++
-    setTodos([...todos])
-    saveToStorage(todos)
+  const updateTodos = (nextTodos: Todo[]) => {
+    setTodos(nextTodos)
+    syncTodos(nextTodos)
+    saveToStorage(nextTodos)
   }
 
-  const deleteTodo = (id: any) => {
-    const updated = todos.filter(
-      (t: any) => t.id == id || t._id == id || t.identifier == id,
-    )
-    setTodos(updated)
-    saveToStorage(updated)
+  const addTodo = (title: string) => {
+    const nextTodos = addTodoOperation(todos, title, getNextTodoId())
+    updateTodos(nextTodos)
   }
 
-  const toggleTodo = (id: any) => {
-    todos.forEach((t: any) => {
-      if (t.id == id || t._id == id || t.identifier == id) {
-        t.completed = !t.completed
-        t.done = !t.done
-        t.isDone = !t.isDone
-      }
-    })
-    setTodos([...todos])
-    saveToStorage(todos)
+  const deleteTodo = (id: number) => {
+    const nextTodos = deleteTodoOperation(todos, id)
+    updateTodos(nextTodos)
   }
 
-  const updateTodo = (id: any, text: any) => {
-    const todo = todos.find(
-      (t: any) => t.id == id || t._id == id || t.identifier == id,
-    )
-    todo.title = text
-    todo.name = text
-    todo.text = text
-    editingId = null
-    setTodos([...todos])
-    saveToStorage(todos)
+  const toggleTodo = (id: number) => {
+    const nextTodos = toggleTodoOperation(todos, id)
+    updateTodos(nextTodos)
   }
 
-  const getFilteredTodos = () => {
-    let result = todos
+  const updateTodo = (id: number, title: string) => {
+    const nextTodos = updateTodoOperation(todos, id, title)
+    updateTodos(nextTodos)
+  }
 
-    if (searchQuery) {
-      result = result.filter(
-        (t: any) =>
-          t.title.includes(searchQuery) || t.name.includes(searchQuery),
-      )
+  const filteredTodos = todos.filter((todo) => {
+    const matchesSearch = todo.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
+
+    if (!matchesSearch) {
+      return false
     }
 
     if (filter === "active") {
-      return result.filter((t: any) => !t.completed && !t.done)
-    } else if (filter === "completed") {
-      return result.filter((t: any) => t.completed || t.done)
+      return !todo.completed
     }
 
-    return result
-  }
+    if (filter === "completed") {
+      return todo.completed
+    }
 
-  const completedCount = todos.filter(
-    (t: any) => t.completed || t.done || t.isDone,
-  ).length
+    return true
+  })
+
+  const completedCount = todos.filter((todo) => todo.completed).length
 
   return (
     <div
@@ -104,7 +83,9 @@ function App() {
         type="text"
         placeholder="Search todos..."
         value={searchQuery}
-        onChange={(e: any) => setSearchQuery(e.target.value)}
+        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+          setSearchQuery(e.target.value)
+        }
         style={{
           width: "100%",
           padding: "8px",
@@ -122,7 +103,7 @@ function App() {
       </div>
 
       <TodoList
-        todos={getFilteredTodos()}
+        todos={filteredTodos}
         onDelete={deleteTodo}
         onToggle={toggleTodo}
         onUpdate={updateTodo}
@@ -139,7 +120,7 @@ function App() {
       >
         <span>Total (global): {globalTodos.length}</span>
         <span>Completed: {completedCount}</span>
-        <span>Count (module var): {todoCount}</span>
+        <span>Total: {todos.length}</span>
         <span>Next id: {idCounter}</span>
       </div>
     </div>
@@ -147,4 +128,3 @@ function App() {
 }
 
 export default App
-
